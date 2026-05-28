@@ -37,7 +37,7 @@ Restful_NE_Starter/
 └── README.md
 ```
 
-## Before the exam (do this once)
+## Before the exam 
 
 ### 1. PostgreSQL
 
@@ -79,7 +79,7 @@ If SMTP is not configured, OTP is printed in the **server console** when you reg
 
 ---
 
-## During the exam (your workflow)
+## During the exam (My workflow)
 
 ### Step 1 — Clone / copy template
 
@@ -88,7 +88,7 @@ git clone <your-repo-url> my-exam-project
 cd my-exam-project
 ```
 
-### Step 2 — Rename domain (example: Car Parking)
+### Step 2 — Rename domain 
 
 | What to change | Where |
 |----------------|-------|
@@ -99,7 +99,7 @@ cd my-exam-project
 | Frontend service | Copy `client/src/services/item.service.js` |
 | Pages + sidebar | `client/src/pages/`, `Sidebar.jsx`, `AppRoutes.jsx` |
 
-### Step 3 — Keep as-is (do not rebuild)
+### Step 3 — No rebuild
 
 - JWT middleware (`server/src/middleware/auth.middleware.js`)
 - Error handler, validation, pagination
