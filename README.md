@@ -1,6 +1,6 @@
 # RESTful National Exam Starter Template
 
-**Exam-ready monorepo** — clone this Monday and only change models, routes, and UI for the question.
+**Exam-ready monorepo** — 
 
 ## Stack
 
@@ -133,7 +133,7 @@ cd my-exam-project
 
 ---
 
-## Quick checklist Monday morning
+## Quick checklist 
 
 - [ ] PostgreSQL running
 - [ ] `server/.env` filled in
@@ -142,4 +142,4 @@ cd my-exam-project
 - [ ] Swagger opens at `/api-docs`
 - [ ] Template saved on USB + GitHub private repo
 
-Good luck on your exam.
+
