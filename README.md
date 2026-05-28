@@ -1,4 +1,4 @@
-# RESTful National Exam Starter Template
+restful_ne_starter
 
 **Exam-ready monorepo** — 
 
