@@ -1,0 +1,34 @@
+{
+  "name": "restful-ne-microservices",
+  "version": "1.0.0",
+  "description": "TZW LTD — Fire Extinguisher Management System (Microservices + One Shared DB)",
+  "type": "module",
+  "scripts": {
+    "install:all": "npm install && npm install --prefix services/auth-service && npm install --prefix services/resource-service && npm install --prefix services/reporting-service && npm install --prefix services/api-gateway && npm install --prefix client && npm run prisma:generate",
+    "prisma:generate": "npm --prefix services/auth-service run prisma:generate && npm --prefix services/resource-service run prisma:generate && npm --prefix services/reporting-service run prisma:generate",
+    "prisma:push": "npm exec prisma db push --schema=prisma/schema.prisma",
+    "db:seed": "node prisma/seed.js",
+    "setup": "npm run install:all && npm run prisma:push && npm run db:seed",
+    "db:backup": "node scripts/backup-database.js",
+    "push:github": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/push-to-github.ps1",
+    "dev:auth": "npm --prefix services/auth-service run dev",
+    "dev:resource": "npm --prefix services/resource-service run dev",
+    "dev:reporting": "npm --prefix services/reporting-service run dev",
+    "dev:gateway": "npm --prefix services/api-gateway run dev",
+    "dev:client": "npm --prefix client run dev",
+    "services": "concurrently -n AUTH,EXTINGUISHER,REPORT,GATEWAY -c cyan,magenta,yellow,green \"npm run dev:auth\" \"npm run dev:resource\" \"npm run dev:reporting\" \"npm run dev:gateway\"",
+    "dev": "concurrently -n AUTH,EXTINGUISHER,REPORT,GATEWAY,CLIENT -c cyan,magenta,yellow,green,blue \"npm run dev:auth\" \"npm run dev:resource\" \"npm run dev:reporting\" \"npm run dev:gateway\" \"npm run dev:client\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prisma": "^6.8.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.5.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}

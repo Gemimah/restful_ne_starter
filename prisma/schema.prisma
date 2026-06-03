@@ -1,0 +1,116 @@
+// TZW LTD — Single shared database for ALL microservices
+// One PostgreSQL database: ne_exam_db
+// Auth, Fire Extinguisher, and Reporting services all read/write here.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth Service tables ─────────────────────────────────────────────────────
+
+model User {
+  id          String    @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String    @unique
+  password    String
+  role        Role      @default(USER)
+  isVerified  Boolean   @default(false)
+  otp         String?
+  otpExpiry   DateTime?
+  resetToken  String?
+  resetExpiry DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  INSPECTOR
+  USER
+}
+
+// ─── Fire Extinguisher Service tables ────────────────────────────────────────
+
+model FireExtinguisher {
+  id               String             @id @default(uuid())
+  serialNumber     String             @unique
+  location         String
+  type             ExtinguisherType
+  size             ExtinguisherSize
+  installationDate DateTime
+  expiryDate       DateTime
+  status           ExtinguisherStatus @default(ACTIVE)
+  registeredBy     String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  inspections      Inspection[]
+  maintenanceLogs  MaintenanceLog[]
+
+  @@map("fire_extinguishers")
+}
+
+model Inspection {
+  id             String           @id @default(uuid())
+  extinguisherId String
+  scheduledDate  DateTime
+  scheduledTime  String
+  status         InspectionStatus @default(PENDING)
+  scheduledBy    String
+  notes          String?
+  notified       Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  extinguisher   FireExtinguisher @relation(fields: [extinguisherId], references: [id], onDelete: Cascade)
+
+  @@map("inspections")
+}
+
+model MaintenanceLog {
+  id               String           @id @default(uuid())
+  extinguisherId   String
+  actionTaken      String
+  maintenanceDate  DateTime
+  issuesIdentified String?
+  notes            String?
+  performedBy      String
+  createdAt        DateTime         @default(now())
+  extinguisher     FireExtinguisher @relation(fields: [extinguisherId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_logs")
+}
+
+enum ExtinguisherType {
+  WATER
+  CO2
+  FOAM
+  DRY_CHEMICAL
+}
+
+enum ExtinguisherSize {
+  LB_1_5
+  LB_5
+  LB_9
+  LB_12
+}
+
+enum ExtinguisherStatus {
+  ACTIVE
+  EXPIRED
+  NEEDS_INSPECTION
+  OUT_OF_SERVICE
+}
+
+enum InspectionStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}

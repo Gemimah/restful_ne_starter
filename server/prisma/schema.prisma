@@ -1,0 +1,51 @@
+// EXAM TIP: Rename models/fields to match the question (e.g. Car, ParkingSlot, Booking)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  isVerified Boolean @default(false)
+  otp       String?
+  otpExpiry DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items Item[]
+
+  @@map("users")
+}
+
+// EXAM TIP: Delete/rename this model — it's a sample CRUD resource
+model Item {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      ItemStatus @default(ACTIVE)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("items")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ItemStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
