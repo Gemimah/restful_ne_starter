@@ -18,6 +18,7 @@ const extinguisherBody = {
     installationDate: { type: 'string', format: 'date-time', example: '2024-01-15T00:00:00.000Z' },
     expiryDate: { type: 'string', format: 'date-time', example: '2026-01-15T00:00:00.000Z' },
     status: { type: 'string', enum: ['ACTIVE', 'EXPIRED', 'NEEDS_INSPECTION', 'OUT_OF_SERVICE'], example: 'ACTIVE' },
+    assignedInspectorId: { type: 'string', format: 'uuid', nullable: true, description: 'INSPECTOR user assigned for field work' },
   },
 };
 
@@ -195,7 +196,7 @@ const options = {
         get: { tags: ['Extinguishers'], summary: 'List extinguishers', security: bearer },
         post: {
           tags: ['Extinguishers'],
-          summary: 'Create extinguisher (ADMIN/INSPECTOR)',
+          summary: 'Create extinguisher (ADMIN only)',
           security: bearer,
           requestBody: jsonBody(extinguisherBody, {
             serialNumber: 'FE-TZW-001',
@@ -205,6 +206,7 @@ const options = {
             installationDate: '2024-06-01T00:00:00.000Z',
             expiryDate: '2026-06-01T00:00:00.000Z',
             status: 'ACTIVE',
+            assignedInspectorId: '00000000-0000-0000-0000-000000000002',
           }),
         },
       },
@@ -227,6 +229,23 @@ const options = {
           summary: 'Delete extinguisher (ADMIN)',
           security: bearer,
           parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
+        },
+      },
+      '/api/extinguishers/{id}/assign': {
+        patch: {
+          tags: ['Extinguishers'],
+          summary: 'Assign inspector to extinguisher (ADMIN only)',
+          security: bearer,
+          parameters: [{ in: 'path', name: 'id', required: true, schema: { type: 'string', format: 'uuid' } }],
+          requestBody: jsonBody(
+            {
+              type: 'object',
+              properties: {
+                assignedInspectorId: { type: 'string', format: 'uuid', nullable: true },
+              },
+            },
+            { assignedInspectorId: '00000000-0000-0000-0000-000000000002' }
+          ),
         },
       },
       '/api/inspections': {

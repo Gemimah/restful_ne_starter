@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader.jsx';
 
 export default function MaintenancePage() {
   const { user } = useAuth();
+  const isInspector = user?.role === 'INSPECTOR';
   const canLog = ['ADMIN', 'INSPECTOR'].includes(user?.role);
   const [logs, setLogs] = useState([]);
   const [extinguishers, setExtinguishers] = useState([]);
@@ -42,7 +43,11 @@ export default function MaintenancePage() {
       <PageHeader
         icon={Wrench}
         title="Maintenance Logging"
-        subtitle="Record service and repair history for each unit"
+        subtitle={
+          isInspector
+            ? 'Log maintenance for extinguishers assigned to you'
+            : 'Record service and repair history for each unit'
+        }
       />
 
       {canLog && (
@@ -63,6 +68,11 @@ export default function MaintenancePage() {
       )}
 
       <div className="mt-6 space-y-2">
+        {logs.length === 0 && (
+          <p className="rounded-lg border bg-white p-4 text-sm text-slate-500">
+            {isInspector ? 'No maintenance logs for your assigned extinguishers.' : 'No maintenance logs yet.'}
+          </p>
+        )}
         {logs.map((log) => (
           <div key={log.id} className="rounded-lg border bg-white p-4">
             <p className="font-medium">{log.extinguisher?.serialNumber} — {log.actionTaken}</p>

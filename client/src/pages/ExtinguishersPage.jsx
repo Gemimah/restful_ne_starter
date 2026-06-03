@@ -3,6 +3,7 @@ import { Flame, Plus, Pencil, Eye, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import { extinguisherService } from '../services/extinguisher.service.js';
+import { authService } from '../services/auth.service.js';
 import { validateExtinguisherDates } from '../utils/validation.js';
 import PageHeader from '../components/PageHeader.jsx';
 
@@ -18,7 +19,13 @@ const emptyForm = {
   installationDate: '',
   expiryDate: '',
   status: 'ACTIVE',
+  assignedInspectorId: '',
 };
+
+function inspectorLabel(user) {
+  if (!user) return 'Unassigned';
+  return `${user.firstName} ${user.lastName}`;
+}
 
 function toDateInput(value) {
   if (!value) return '';
@@ -34,6 +41,7 @@ function formFromItem(item) {
     installationDate: toDateInput(item.installationDate),
     expiryDate: toDateInput(item.expiryDate),
     status: item.status,
+    assignedInspectorId: item.assignedInspectorId || '',
   };
 }
 
@@ -70,9 +78,13 @@ function DateField({ id, label, hint, value, onChange, min, error }) {
 
 export default function ExtinguishersPage() {
   const { user } = useAuth();
-  const canManage = ['ADMIN', 'INSPECTOR'].includes(user?.role);
-  const canDelete = user?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
+  const isInspector = user?.role === 'INSPECTOR';
+  const canCreate = isAdmin;
+  const canEdit = isAdmin || isInspector;
+  const canDelete = isAdmin;
   const [items, setItems] = useState([]);
+  const [inspectors, setInspectors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
@@ -92,7 +104,14 @@ export default function ExtinguishersPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    if (isAdmin) {
+      authService.listUsers().then(({ data }) => {
+        setInspectors((data.data || []).filter((u) => u.role === 'INSPECTOR'));
+      }).catch(() => {});
+    }
+  }, [isAdmin]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -105,7 +124,10 @@ export default function ExtinguishersPage() {
     setFormErrors({});
     setSubmitting(true);
     try {
-      await extinguisherService.create(form);
+      await extinguisherService.create({
+        ...form,
+        assignedInspectorId: form.assignedInspectorId || undefined,
+      });
       toast.success('Fire extinguisher registered');
       setForm(emptyForm);
       load();
@@ -131,7 +153,14 @@ export default function ExtinguishersPage() {
     setEditErrors({});
     setSubmitting(true);
     try {
-      await extinguisherService.update(editingId, editForm);
+      const payload = { ...editForm };
+      if (isInspector) {
+        delete payload.serialNumber;
+        delete payload.assignedInspectorId;
+      } else if (!payload.assignedInspectorId) {
+        payload.assignedInspectorId = null;
+      }
+      await extinguisherService.update(editingId, payload);
       toast.success('Extinguisher updated');
       setEditingId(null);
       load();
@@ -159,15 +188,27 @@ export default function ExtinguishersPage() {
     load();
   };
 
+  const handleAssign = async (id, assignedInspectorId) => {
+    try {
+      await extinguisherService.assign(id, assignedInspectorId);
+      toast.success('Inspector assignment updated');
+      load();
+    } catch {
+      toast.error('Could not assign inspector');
+    }
+  };
+
+  const pageSubtitle = isInspector
+    ? 'Extinguishers assigned to you for inspection and maintenance'
+    : isAdmin
+      ? 'Register company assets and assign field inspectors'
+      : 'View fire safety equipment across the facility';
+
   return (
     <div>
-      <PageHeader
-        icon={Flame}
-        title="Fire Extinguishers"
-        subtitle="Register and manage fire safety equipment"
-      />
+      <PageHeader icon={Flame} title="Fire Extinguishers" subtitle={pageSubtitle} />
 
-      {canManage && !editingId && (
+      {canCreate && !editingId && (
         <form onSubmit={handleCreate} className="mt-6 rounded-xl border bg-white p-4">
           <p className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-800">
             <Plus className="h-4 w-4 text-red-600" strokeWidth={2} aria-hidden />
@@ -265,7 +306,22 @@ export default function ExtinguishersPage() {
                 ))}
               </select>
             </div>
-            <div className="flex items-end">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Assign inspector</label>
+              <select
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={form.assignedInspectorId}
+                onChange={(e) => setForm({ ...form, assignedInspectorId: e.target.value })}
+              >
+                <option value="">Unassigned</option>
+                {inspectors.map((insp) => (
+                  <option key={insp.id} value={insp.id}>
+                    {insp.firstName} {insp.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end md:col-span-2">
               <button
                 type="submit"
                 disabled={submitting}
@@ -278,7 +334,7 @@ export default function ExtinguishersPage() {
         </form>
       )}
 
-      {editingId && canManage && (
+      {editingId && canEdit && (
         <form onSubmit={handleUpdate} className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <h3 className="mb-3 font-semibold text-amber-900">Edit Extinguisher</h3>
           <div className="grid gap-3 md:grid-cols-4">
@@ -286,7 +342,8 @@ export default function ExtinguishersPage() {
               <label className="mb-1 block text-xs font-medium text-slate-700">Serial number</label>
               <input
                 required
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                readOnly={isInspector}
+                className={`w-full rounded-lg border border-slate-300 px-3 py-2 text-sm ${isInspector ? 'bg-slate-100 text-slate-600' : ''}`}
                 value={editForm.serialNumber}
                 onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
               />
@@ -371,6 +428,23 @@ export default function ExtinguishersPage() {
                 ))}
               </select>
             </div>
+            {isAdmin && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-700">Assign inspector</label>
+                <select
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  value={editForm.assignedInspectorId}
+                  onChange={(e) => setEditForm({ ...editForm, assignedInspectorId: e.target.value })}
+                >
+                  <option value="">Unassigned</option>
+                  {inspectors.map((insp) => (
+                    <option key={insp.id} value={insp.id}>
+                      {insp.firstName} {insp.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <div className="mt-3 flex gap-2">
             <button type="submit" disabled={submitting} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white">Save Changes</button>
@@ -394,6 +468,7 @@ export default function ExtinguishersPage() {
             <div><dt className="text-slate-500">Size</dt><dd>{detail.size}</dd></div>
             <div><dt className="text-slate-500">Installed</dt><dd>{new Date(detail.installationDate).toLocaleDateString()}</dd></div>
             <div><dt className="text-slate-500">Expires</dt><dd>{new Date(detail.expiryDate).toLocaleDateString()}</dd></div>
+            <div><dt className="text-slate-500">Assigned inspector</dt><dd>{inspectorLabel(detail.assignedInspector)}</dd></div>
             <div><dt className="text-slate-500">Inspections</dt><dd>{detail.inspections?.length ?? 0} recent</dd></div>
             <div><dt className="text-slate-500">Maintenance logs</dt><dd>{detail.maintenanceLogs?.length ?? 0} recent</dd></div>
           </dl>
@@ -409,23 +484,49 @@ export default function ExtinguishersPage() {
                 <th className="p-3">Location</th>
                 <th className="p-3">Type</th>
                 <th className="p-3">Status</th>
+                <th className="p-3">Inspector</th>
                 <th className="p-3">Expiry</th>
                 <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-slate-500">
+                    {isInspector ? 'No extinguishers assigned to you yet.' : 'No extinguishers registered.'}
+                  </td>
+                </tr>
+              )}
               {items.map((item) => (
                 <tr key={item.id} className="border-b">
                   <td className="p-3 font-medium">{item.serialNumber}</td>
                   <td className="p-3">{item.location}</td>
                   <td className="p-3">{item.type}</td>
                   <td className="p-3"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{item.status}</span></td>
+                  <td className="p-3">
+                    {isAdmin ? (
+                      <select
+                        className="rounded border border-slate-200 px-2 py-1 text-xs"
+                        value={item.assignedInspectorId || ''}
+                        onChange={(e) => handleAssign(item.id, e.target.value)}
+                      >
+                        <option value="">Unassigned</option>
+                        {inspectors.map((insp) => (
+                          <option key={insp.id} value={insp.id}>
+                            {insp.firstName} {insp.lastName}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      inspectorLabel(item.assignedInspector)
+                    )}
+                  </td>
                   <td className="p-3">{new Date(item.expiryDate).toLocaleDateString()}</td>
                   <td className="p-3 space-x-2">
                     <button type="button" onClick={() => viewDetails(item.id)} className="inline-flex items-center gap-1 text-blue-600 hover:underline">
                       <Eye className="h-3.5 w-3.5" aria-hidden /> View
                     </button>
-                    {canManage && (
+                    {canEdit && (
                       <button type="button" onClick={() => startEdit(item)} className="inline-flex items-center gap-1 text-amber-600 hover:underline">
                         <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
                       </button>

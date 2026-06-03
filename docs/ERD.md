@@ -28,7 +28,8 @@ FireExtinguisher                    Inspection
 ├── installationDate                ├── scheduledBy (userId ref)
 ├── expiryDate                      └── notes, notified
 ├── status
-└── registeredBy (userId ref)
+├── registeredBy (userId ref)
+└── assignedInspectorId (FK, optional) ──► User (INSPECTOR)
 
 MaintenanceLog
 ├── id (PK)
@@ -44,6 +45,7 @@ MaintenanceLog
 
 - One **FireExtinguisher** → many **Inspections**
 - One **FireExtinguisher** → many **MaintenanceLogs**
+- One **User** (INSPECTOR) → many **FireExtinguishers** (assigned field work)
 - **User** IDs referenced across services (shared PostgreSQL database)
 
 ## Mermaid ERD
@@ -51,6 +53,7 @@ MaintenanceLog
 ```mermaid
 erDiagram
     User ||--o{ FireExtinguisher : registers
+    User ||--o{ FireExtinguisher : assigned_inspector
     FireExtinguisher ||--o{ Inspection : has
     FireExtinguisher ||--o{ MaintenanceLog : has
     User ||--o{ Inspection : schedules
@@ -72,6 +75,7 @@ erDiagram
         enum size
         date expiryDate
         enum status
+        uuid assignedInspectorId FK
     }
 
     Inspection {

@@ -1,11 +1,21 @@
 import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { getPagination, buildPaginatedResponse } from '../utils/pagination.js';
+import { assertInspectorCanAccessExtinguisher } from '../utils/extinguisherAccess.js';
 import * as extinguisherService from './extinguisher.service.js';
 
-export async function getAll(query) {
+function inspectorMaintenanceWhere(user) {
+  if (user?.role === 'INSPECTOR') {
+    return { extinguisher: { assignedInspectorId: user.id } };
+  }
+  return {};
+}
+
+export async function getAll(query, user) {
   const { page, limit, skip } = getPagination(query);
-  const where = {};
+  const where = {
+    ...inspectorMaintenanceWhere(user),
+  };
   if (query.extinguisherId) where.extinguisherId = query.extinguisherId;
 
   const [data, total] = await Promise.all([
@@ -22,7 +32,7 @@ export async function getAll(query) {
   return buildPaginatedResponse(data, total, { page, limit });
 }
 
-export async function getById(id) {
+export async function getById(id, user) {
   const log = await prisma.maintenanceLog.findUnique({
     where: { id },
     include: { extinguisher: true },
@@ -30,11 +40,12 @@ export async function getById(id) {
   if (!log) {
     throw new AppError('Maintenance log not found', 404);
   }
+  assertInspectorCanAccessExtinguisher(log.extinguisher, user);
   return log;
 }
 
-export async function create(data, userId) {
-  await extinguisherService.getById(data.extinguisherId);
+export async function create(data, userId, user) {
+  await extinguisherService.getById(data.extinguisherId, user);
 
   const log = await prisma.maintenanceLog.create({
     data: {

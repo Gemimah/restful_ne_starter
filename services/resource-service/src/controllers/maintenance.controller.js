@@ -2,7 +2,7 @@ import * as maintenanceService from '../services/maintenance.service.js';
 
 export async function getAll(req, res, next) {
   try {
-    const result = await maintenanceService.getAll(req.query);
+    const result = await maintenanceService.getAll(req.query, req.user);
     res.json({ success: true, ...result });
   } catch (error) {
     next(error);
@@ -11,7 +11,7 @@ export async function getAll(req, res, next) {
 
 export async function getById(req, res, next) {
   try {
-    const data = await maintenanceService.getById(req.params.id);
+    const data = await maintenanceService.getById(req.params.id, req.user);
     res.json({ success: true, data });
   } catch (error) {
     next(error);
@@ -20,7 +20,7 @@ export async function getById(req, res, next) {
 
 export async function create(req, res, next) {
   try {
-    const data = await maintenanceService.create(req.body, req.user.id);
+    const data = await maintenanceService.create(req.body, req.user.id, req.user);
     res.status(201).json({ success: true, data });
   } catch (error) {
     next(error);

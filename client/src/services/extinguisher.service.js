@@ -5,6 +5,8 @@ export const extinguisherService = {
   getById: (id) => api.get(`/extinguishers/${id}`),
   create: (data) => api.post('/extinguishers', data),
   update: (id, data) => api.put(`/extinguishers/${id}`, data),
+  assign: (id, assignedInspectorId) =>
+    api.patch(`/extinguishers/${id}/assign`, { assignedInspectorId: assignedInspectorId || null }),
   remove: (id) => api.delete(`/extinguishers/${id}`),
 };
 

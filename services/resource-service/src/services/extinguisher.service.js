@@ -1,10 +1,18 @@
 import { prisma } from '../config/database.js';
 import { AppError } from '../utils/AppError.js';
 import { getPagination, buildPaginatedResponse } from '../utils/pagination.js';
+import {
+  assertInspectorCanAccessExtinguisher,
+  extinguisherInclude,
+  inspectorExtinguisherFilter,
+  validateInspectorId,
+} from '../utils/extinguisherAccess.js';
 
-export async function getAll(query) {
+export async function getAll(query, user) {
   const { page, limit, skip } = getPagination(query);
-  const where = {};
+  const where = {
+    ...inspectorExtinguisherFilter(user),
+  };
   if (query.status) where.status = query.status;
   if (query.type) where.type = query.type;
 
@@ -14,7 +22,7 @@ export async function getAll(query) {
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { inspections: true, maintenanceLogs: true } } },
+      include: extinguisherInclude,
     }),
     prisma.fireExtinguisher.count({ where }),
   ]);
@@ -22,10 +30,11 @@ export async function getAll(query) {
   return buildPaginatedResponse(data, total, { page, limit });
 }
 
-export async function getById(id) {
+export async function getById(id, user) {
   const extinguisher = await prisma.fireExtinguisher.findUnique({
     where: { id },
     include: {
+      ...extinguisherInclude,
       inspections: { orderBy: { scheduledDate: 'desc' }, take: 10 },
       maintenanceLogs: { orderBy: { maintenanceDate: 'desc' }, take: 10 },
     },
@@ -35,6 +44,7 @@ export async function getById(id) {
     throw new AppError('Fire extinguisher not found', 404);
   }
 
+  assertInspectorCanAccessExtinguisher(extinguisher, user);
   return extinguisher;
 }
 
@@ -46,6 +56,19 @@ function ensureExpiryAfterInstallation(installationDate, expiryDate) {
   if (expiry <= install) {
     throw new AppError('Expiry date must be after installation date', 400);
   }
+}
+
+function pickExtinguisherFields(data) {
+  const fields = {
+    serialNumber: data.serialNumber,
+    location: data.location,
+    type: data.type,
+    size: data.size,
+    status: data.status,
+  };
+  if (data.installationDate) fields.installationDate = new Date(data.installationDate);
+  if (data.expiryDate) fields.expiryDate = new Date(data.expiryDate);
+  return fields;
 }
 
 export async function create(data, userId) {
@@ -60,18 +83,33 @@ export async function create(data, userId) {
   const expiryDate = new Date(data.expiryDate);
   ensureExpiryAfterInstallation(installationDate, expiryDate);
 
+  if (data.assignedInspectorId) {
+    await validateInspectorId(data.assignedInspectorId);
+  }
+
   return prisma.fireExtinguisher.create({
     data: {
-      ...data,
+      serialNumber: data.serialNumber,
+      location: data.location,
+      type: data.type,
+      size: data.size,
       installationDate,
       expiryDate,
+      status: data.status || 'ACTIVE',
       registeredBy: userId,
+      assignedInspectorId: data.assignedInspectorId || null,
     },
+    include: extinguisherInclude,
   });
 }
 
-export async function update(id, data) {
-  const current = await getById(id);
+export async function update(id, data, user) {
+  const current = await prisma.fireExtinguisher.findUnique({ where: { id } });
+  if (!current) {
+    throw new AppError('Fire extinguisher not found', 404);
+  }
+
+  assertInspectorCanAccessExtinguisher(current, user);
 
   if (data.serialNumber) {
     const existing = await prisma.fireExtinguisher.findFirst({
@@ -82,22 +120,49 @@ export async function update(id, data) {
     }
   }
 
-  const payload = { ...data };
-  const installationDate = data.installationDate
-    ? new Date(data.installationDate)
-    : current.installationDate;
-  const expiryDate = data.expiryDate ? new Date(data.expiryDate) : current.expiryDate;
+  const payload = pickExtinguisherFields(data);
 
+  if (user?.role === 'INSPECTOR') {
+    delete payload.serialNumber;
+  }
+
+  if (user?.role === 'ADMIN' && 'assignedInspectorId' in data) {
+    if (data.assignedInspectorId) {
+      await validateInspectorId(data.assignedInspectorId);
+    }
+    payload.assignedInspectorId = data.assignedInspectorId || null;
+  }
+
+  const installationDate = payload.installationDate ?? current.installationDate;
+  const expiryDate = payload.expiryDate ?? current.expiryDate;
   ensureExpiryAfterInstallation(installationDate, expiryDate);
 
-  if (data.installationDate) payload.installationDate = installationDate;
-  if (data.expiryDate) payload.expiryDate = expiryDate;
+  return prisma.fireExtinguisher.update({
+    where: { id },
+    data: payload,
+    include: extinguisherInclude,
+  });
+}
 
-  return prisma.fireExtinguisher.update({ where: { id }, data: payload });
+export async function assignInspector(id, inspectorId) {
+  const exists = await prisma.fireExtinguisher.findUnique({ where: { id } });
+  if (!exists) {
+    throw new AppError('Fire extinguisher not found', 404);
+  }
+
+  if (inspectorId) {
+    await validateInspectorId(inspectorId);
+  }
+
+  return prisma.fireExtinguisher.update({
+    where: { id },
+    data: { assignedInspectorId: inspectorId || null },
+    include: extinguisherInclude,
+  });
 }
 
 export async function remove(id) {
-  await getById(id);
+  await prisma.fireExtinguisher.findUniqueOrThrow({ where: { id } });
   await prisma.fireExtinguisher.delete({ where: { id } });
   return { message: 'Fire extinguisher deleted successfully' };
 }

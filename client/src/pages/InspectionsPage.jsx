@@ -7,6 +7,8 @@ import PageHeader from '../components/PageHeader.jsx';
 
 export default function InspectionsPage() {
   const { user } = useAuth();
+  const isInspector = user?.role === 'INSPECTOR';
+  const canSchedule = !isInspector;
   const canUpdate = ['ADMIN', 'INSPECTOR'].includes(user?.role);
   const [inspections, setInspections] = useState([]);
   const [extinguishers, setExtinguishers] = useState([]);
@@ -42,8 +44,13 @@ export default function InspectionsPage() {
       <PageHeader
         icon={ClipboardCheck}
         title="Inspection Scheduling"
-        subtitle="Plan and track fire extinguisher inspections"
+        subtitle={
+          isInspector
+            ? 'Complete inspections for extinguishers assigned to you'
+            : 'Plan and track fire extinguisher inspections'
+        }
       />
+      {canSchedule && (
       <form onSubmit={handleSchedule} className="mt-6 grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-2">
         <select required className="rounded-lg border px-3 py-2 text-sm" value={form.extinguisherId} onChange={(e) => setForm({ ...form, extinguisherId: e.target.value })}>
           <option value="">Select Fire Extinguisher</option>
@@ -59,8 +66,14 @@ export default function InspectionsPage() {
           Schedule Inspection
         </button>
       </form>
+      )}
 
       <div className="mt-6 space-y-2">
+        {inspections.length === 0 && (
+          <p className="rounded-lg border bg-white p-4 text-sm text-slate-500">
+            {isInspector ? 'No inspection tasks assigned to you.' : 'No inspections scheduled yet.'}
+          </p>
+        )}
         {inspections.map((insp) => (
           <div key={insp.id} className="flex items-center justify-between rounded-lg border bg-white p-4">
             <div>

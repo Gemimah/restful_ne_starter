@@ -28,6 +28,7 @@ export const createExtinguisherValidation = [
       return true;
     }),
   body('status').optional().isIn(extinguisherStatuses),
+  body('assignedInspectorId').optional({ nullable: true }).isUUID().withMessage('Valid inspector ID required'),
 ];
 
 export const updateExtinguisherValidation = [
@@ -47,6 +48,7 @@ export const updateExtinguisherValidation = [
       return true;
     }),
   body('status').optional().isIn(extinguisherStatuses),
+  body('assignedInspectorId').optional({ nullable: true }).isUUID(),
 ];
 
 export const extinguisherIdValidation = [
