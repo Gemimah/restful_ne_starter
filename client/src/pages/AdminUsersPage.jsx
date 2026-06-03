@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { authService } from '../services/auth.service.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const ROLES = ['ADMIN', 'INSPECTOR', 'USER'];
 
@@ -46,8 +48,11 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-slate-900">User Management</h2>
-      <p className="mt-1 text-sm text-slate-500">Admin — manage accounts and roles (ADMIN, INSPECTOR, USER)</p>
+      <PageHeader
+        icon={Users}
+        title="User Management"
+        subtitle="Manage accounts and roles (ADMIN, INSPECTOR, USER)"
+      />
 
       {loading ? (
         <p className="mt-6 text-slate-500">Loading users...</p>

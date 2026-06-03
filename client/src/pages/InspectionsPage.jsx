@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { ClipboardCheck, CalendarPlus, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import { extinguisherService, inspectionService } from '../services/extinguisher.service.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 export default function InspectionsPage() {
   const { user } = useAuth();
@@ -37,7 +39,11 @@ export default function InspectionsPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold">Inspection Scheduling</h2>
+      <PageHeader
+        icon={ClipboardCheck}
+        title="Inspection Scheduling"
+        subtitle="Plan and track fire extinguisher inspections"
+      />
       <form onSubmit={handleSchedule} className="mt-6 grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-2">
         <select required className="rounded-lg border px-3 py-2 text-sm" value={form.extinguisherId} onChange={(e) => setForm({ ...form, extinguisherId: e.target.value })}>
           <option value="">Select Fire Extinguisher</option>
@@ -48,7 +54,10 @@ export default function InspectionsPage() {
         <input type="date" required className="rounded-lg border px-3 py-2 text-sm" value={form.scheduledDate} onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })} />
         <input type="time" required className="rounded-lg border px-3 py-2 text-sm" value={form.scheduledTime} onChange={(e) => setForm({ ...form, scheduledTime: e.target.value })} />
         <input placeholder="Notes" className="rounded-lg border px-3 py-2 text-sm" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        <button type="submit" className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white md:col-span-2">Schedule Inspection</button>
+        <button type="submit" className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white md:col-span-2">
+          <CalendarPlus className="h-4 w-4" aria-hidden />
+          Schedule Inspection
+        </button>
       </form>
 
       <div className="mt-6 space-y-2">
@@ -61,7 +70,14 @@ export default function InspectionsPage() {
               </p>
             </div>
             {canUpdate && insp.status === 'PENDING' && (
-              <button onClick={() => markComplete(insp.id)} className="text-sm text-green-600 hover:underline">Complete</button>
+              <button
+                type="button"
+                onClick={() => markComplete(insp.id)}
+                className="inline-flex items-center gap-1 text-sm font-medium text-green-600 hover:underline"
+              >
+                <CheckCircle2 className="h-4 w-4" aria-hidden />
+                Complete
+              </button>
             )}
           </div>
         ))}

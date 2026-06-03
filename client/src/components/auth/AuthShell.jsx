@@ -1,12 +1,11 @@
 import { Link } from 'react-router-dom';
+import { Flame } from 'lucide-react';
 
 function AuthLogo() {
   return (
     <div className="mb-8 flex items-center gap-3">
       <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0f2744] shadow-sm">
-        <svg className="h-6 w-6 text-red-500" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-          <path d="M12 2C8.5 2 6 4.5 6 8v2H4v12h16V10h-2V8c0-3.5-2.5-6-6-6zm0 2c2.2 0 4 1.8 4 4v2H8V8c0-2.2 1.8-4 4-4zm-6 8h12v8H6v-8z" />
-        </svg>
+        <Flame className="h-6 w-6 text-red-500" strokeWidth={2} aria-hidden />
       </div>
       <div>
         <p className="text-lg font-bold tracking-tight text-[#0f2744]">TZW LTD</p>

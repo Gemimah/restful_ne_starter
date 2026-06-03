@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { Mail, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../services/auth.service.js';
 import AuthShell, { AuthFooterLink } from '../components/auth/AuthShell.jsx';
-import { authButton, authInput, authLabel } from '../components/auth/authStyles.js';
+import IconInput from '../components/ui/IconInput.jsx';
+import { authButton, authLabel } from '../components/auth/authStyles.js';
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -31,16 +33,17 @@ export default function ForgotPasswordPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className={authLabel}>Email</label>
-          <input
+          <IconInput
+            icon={Mail}
             type="email"
             required
             placeholder="you@company.com"
-            className={authInput}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-        <button type="submit" disabled={loading} className={authButton}>
+        <button type="submit" disabled={loading} className={`${authButton} inline-flex items-center justify-center gap-2`}>
+          <Send className="h-4 w-4" aria-hidden />
           {loading ? 'Sending...' : 'Send reset code'}
         </button>
       </form>

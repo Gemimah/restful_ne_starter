@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Flame, Plus, Pencil, Eye, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import { extinguisherService } from '../services/extinguisher.service.js';
 import { validateExtinguisherDates } from '../utils/validation.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 const TYPES = ['WATER', 'CO2', 'FOAM', 'DRY_CHEMICAL'];
 const SIZES = ['LB_1_5', 'LB_5', 'LB_9', 'LB_12'];
@@ -159,12 +161,18 @@ export default function ExtinguishersPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold">Fire Extinguishers</h2>
-      <p className="text-sm text-slate-500">Register and manage fire safety equipment</p>
+      <PageHeader
+        icon={Flame}
+        title="Fire Extinguishers"
+        subtitle="Register and manage fire safety equipment"
+      />
 
       {canManage && !editingId && (
         <form onSubmit={handleCreate} className="mt-6 rounded-xl border bg-white p-4">
-          <p className="mb-3 text-sm font-medium text-slate-800">Register new extinguisher</p>
+          <p className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-800">
+            <Plus className="h-4 w-4 text-red-600" strokeWidth={2} aria-hidden />
+            Register new extinguisher
+          </p>
           <div className="grid gap-3 md:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-700">Serial number</label>
@@ -414,12 +422,18 @@ export default function ExtinguishersPage() {
                   <td className="p-3"><span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{item.status}</span></td>
                   <td className="p-3">{new Date(item.expiryDate).toLocaleDateString()}</td>
                   <td className="p-3 space-x-2">
-                    <button onClick={() => viewDetails(item.id)} className="text-blue-600 hover:underline">View</button>
+                    <button type="button" onClick={() => viewDetails(item.id)} className="inline-flex items-center gap-1 text-blue-600 hover:underline">
+                      <Eye className="h-3.5 w-3.5" aria-hidden /> View
+                    </button>
                     {canManage && (
-                      <button onClick={() => startEdit(item)} className="text-amber-600 hover:underline">Edit</button>
+                      <button type="button" onClick={() => startEdit(item)} className="inline-flex items-center gap-1 text-amber-600 hover:underline">
+                        <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
+                      </button>
                     )}
                     {canDelete && (
-                      <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:underline">Delete</button>
+                      <button type="button" onClick={() => handleDelete(item.id)} className="inline-flex items-center gap-1 text-red-600 hover:underline">
+                        <Trash2 className="h-3.5 w-3.5" aria-hidden /> Delete
+                      </button>
                     )}
                   </td>
                 </tr>

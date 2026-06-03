@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { User, Mail, Lock, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../services/auth.service.js';
 import { validateRegisterForm } from '../utils/validation.js';
 import AuthShell, { AuthFooterLink } from '../components/auth/AuthShell.jsx';
-import { authButton, authInput, authInputError, authLabel } from '../components/auth/authStyles.js';
+import IconInput from '../components/ui/IconInput.jsx';
+import { authButton, authInputError, authLabel } from '../components/auth/authStyles.js';
 
 const initialForm = {
   firstName: '',
@@ -20,7 +22,7 @@ function FieldError({ message }) {
 }
 
 function fieldClass(hasError) {
-  return hasError ? authInputError : authInput;
+  return hasError ? authInputError : '';
 }
 
 export default function RegisterPage() {
@@ -78,12 +80,13 @@ export default function RegisterPage() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={authLabel}>First name</label>
-            <input
+            <IconInput
+              icon={User}
               type="text"
               autoComplete="given-name"
               maxLength={50}
               placeholder="Jane"
-              className={fieldClass(errors.firstName)}
+              inputClassName={fieldClass(errors.firstName)}
               value={form.firstName}
               onChange={(e) => updateField('firstName', e.target.value)}
             />
@@ -91,12 +94,13 @@ export default function RegisterPage() {
           </div>
           <div>
             <label className={authLabel}>Last name</label>
-            <input
+            <IconInput
+              icon={User}
               type="text"
               autoComplete="family-name"
               maxLength={50}
               placeholder="Doe"
-              className={fieldClass(errors.lastName)}
+              inputClassName={fieldClass(errors.lastName)}
               value={form.lastName}
               onChange={(e) => updateField('lastName', e.target.value)}
             />
@@ -105,11 +109,12 @@ export default function RegisterPage() {
         </div>
         <div>
           <label className={authLabel}>Email</label>
-          <input
+          <IconInput
+            icon={Mail}
             type="email"
             autoComplete="email"
             placeholder="you@company.com"
-            className={fieldClass(errors.email)}
+            inputClassName={fieldClass(errors.email)}
             value={form.email}
             onChange={(e) => updateField('email', e.target.value)}
           />
@@ -117,12 +122,13 @@ export default function RegisterPage() {
         </div>
         <div>
           <label className={authLabel}>Password</label>
-          <input
+          <IconInput
+            icon={Lock}
             type="password"
             autoComplete="new-password"
             maxLength={128}
             placeholder="At least 6 characters"
-            className={fieldClass(errors.password)}
+            inputClassName={fieldClass(errors.password)}
             value={form.password}
             onChange={(e) => updateField('password', e.target.value)}
           />
@@ -130,18 +136,20 @@ export default function RegisterPage() {
         </div>
         <div>
           <label className={authLabel}>Confirm password</label>
-          <input
+          <IconInput
+            icon={Lock}
             type="password"
             autoComplete="new-password"
             maxLength={128}
             placeholder="Repeat password"
-            className={fieldClass(errors.confirmPassword)}
+            inputClassName={fieldClass(errors.confirmPassword)}
             value={form.confirmPassword}
             onChange={(e) => updateField('confirmPassword', e.target.value)}
           />
           <FieldError message={errors.confirmPassword} />
         </div>
-        <button type="submit" disabled={loading} className={authButton}>
+        <button type="submit" disabled={loading} className={`${authButton} inline-flex items-center justify-center gap-2`}>
+          <UserPlus className="h-4 w-4" aria-hidden />
           {loading ? 'Creating account...' : 'Create account'}
         </button>
       </form>

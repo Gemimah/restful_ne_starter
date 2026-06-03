@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { BarChart3, FileSpreadsheet, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import { reportService } from '../services/report.service.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 function parseFilename(contentDisposition, fallback) {
   if (!contentDisposition) return fallback;
@@ -60,11 +62,11 @@ export default function ReportsPage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-slate-900">Real-Time Reports</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Summary below updates live from the database. Export as <strong>CSV</strong> (Excel) or{' '}
-        <strong>PDF</strong> (formatted table).
-      </p>
+      <PageHeader
+        icon={BarChart3}
+        title="Real-Time Reports"
+        subtitle="Live summaries from the database. Export as CSV (Excel) or PDF."
+      />
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <ReportCard
@@ -205,16 +207,18 @@ function ReportCard({ title, fields, breakdown, breakdownLabel, table, canExport
           <button
             type="button"
             onClick={() => onExport(exportType, 'csv')}
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
           >
-            Download CSV (Excel)
+            <FileSpreadsheet className="h-3.5 w-3.5" aria-hidden />
+            CSV (Excel)
           </button>
           <button
             type="button"
             onClick={() => onExport(exportType, 'pdf')}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
           >
-            Download PDF
+            <FileText className="h-3.5 w-3.5" aria-hidden />
+            PDF
           </button>
         </div>
       )}

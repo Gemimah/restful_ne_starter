@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Wrench, ClipboardPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import { extinguisherService, maintenanceService } from '../services/extinguisher.service.js';
+import PageHeader from '../components/PageHeader.jsx';
 
 export default function MaintenancePage() {
   const { user } = useAuth();
@@ -37,7 +39,11 @@ export default function MaintenancePage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold">Maintenance Logging</h2>
+      <PageHeader
+        icon={Wrench}
+        title="Maintenance Logging"
+        subtitle="Record service and repair history for each unit"
+      />
 
       {canLog && (
         <form onSubmit={handleSubmit} className="mt-6 grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-2">
@@ -49,7 +55,10 @@ export default function MaintenancePage() {
           <input type="date" required className="rounded-lg border px-3 py-2 text-sm" value={form.maintenanceDate} onChange={(e) => setForm({ ...form, maintenanceDate: e.target.value })} />
           <input placeholder="Issues Identified" className="rounded-lg border px-3 py-2 text-sm" value={form.issuesIdentified} onChange={(e) => setForm({ ...form, issuesIdentified: e.target.value })} />
           <textarea placeholder="Notes & Recommendations" className="rounded-lg border px-3 py-2 text-sm md:col-span-2" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-          <button type="submit" className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white md:col-span-2">Log Maintenance</button>
+          <button type="submit" className="flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white md:col-span-2">
+            <ClipboardPlus className="h-4 w-4" aria-hidden />
+            Log Maintenance
+          </button>
         </form>
       )}
 

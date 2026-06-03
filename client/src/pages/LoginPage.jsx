@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../services/auth.service.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { Mail, Lock, LogIn } from 'lucide-react';
 import AuthShell, { AuthFooterLink } from '../components/auth/AuthShell.jsx';
-import { authButton, authInput, authLabel, authLink } from '../components/auth/authStyles.js';
+import IconInput from '../components/ui/IconInput.jsx';
+import { authButton, authLabel, authLink } from '../components/auth/authStyles.js';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -36,24 +38,24 @@ export default function LoginPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className={authLabel}>Email</label>
-          <input
+          <IconInput
+            icon={Mail}
             type="email"
             required
             autoComplete="email"
             placeholder="you@company.com"
-            className={authInput}
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
         </div>
         <div>
           <label className={authLabel}>Password</label>
-          <input
+          <IconInput
+            icon={Lock}
             type="password"
             required
             autoComplete="current-password"
             placeholder="Enter your password"
-            className={authInput}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
           />
@@ -63,7 +65,8 @@ export default function LoginPage() {
             Forgot password?
           </Link>
         </p>
-        <button type="submit" disabled={loading} className={authButton}>
+        <button type="submit" disabled={loading} className={`${authButton} inline-flex items-center justify-center gap-2`}>
+          <LogIn className="h-4 w-4" aria-hidden />
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
       </form>
