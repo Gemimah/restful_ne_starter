@@ -17,8 +17,20 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    const message = error.response?.data?.message || error.message || 'Request failed';
+  async (error) => {
+    let message = error.message || 'Request failed';
+    const data = error.response?.data;
+    if (data instanceof Blob && data.type?.includes('json')) {
+      try {
+        const text = await data.text();
+        const parsed = JSON.parse(text);
+        message = parsed.message || message;
+      } catch {
+        // keep default message
+      }
+    } else if (data?.message) {
+      message = data.message;
+    }
 
     if (error.response?.status === 401) {
       storage.clear();

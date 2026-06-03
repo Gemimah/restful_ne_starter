@@ -6,6 +6,14 @@ export const reportService = {
   inspections: () => api.get('/reports/inspections'),
   compliance: () => api.get('/reports/compliance'),
   maintenance: () => api.get('/reports/maintenance'),
-  exportCsv: (type) => api.get(`/reports/export/${type}/csv`, { responseType: 'blob' }),
-  exportPdf: (type) => api.get(`/reports/export/${type}/pdf`, { responseType: 'blob' }),
+  exportCsv: (type) =>
+    api.get(`/reports/export/${type}/csv`, {
+      responseType: 'blob',
+      skipErrorToast: true,
+    }),
+  exportPdf: (type) =>
+    api.get(`/reports/export/${type}/pdf`, {
+      responseType: 'blob',
+      skipErrorToast: true,
+    }),
 };

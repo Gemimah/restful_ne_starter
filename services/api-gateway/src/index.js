@@ -17,7 +17,12 @@ const AUTH_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:5001';
 const EXTINGUISHER_URL = process.env.EXTINGUISHER_SERVICE_URL || process.env.RESOURCE_SERVICE_URL || 'http://localhost:5002';
 const REPORTING_URL = process.env.REPORTING_SERVICE_URL || 'http://localhost:5003';
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,

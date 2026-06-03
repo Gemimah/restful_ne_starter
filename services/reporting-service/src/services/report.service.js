@@ -125,5 +125,121 @@ export function toCsv(rows, columns) {
   const escape = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const header = columns.map((c) => escape(c.label)).join(',');
   const lines = rows.map((row) => columns.map((c) => escape(typeof c.key === 'function' ? c.key(row) : row[c.key])).join(','));
-  return [header, ...lines].join('\n');
+  return `\uFEFF${[header, ...lines].join('\r\n')}`;
+}
+
+export function cellValue(row, col) {
+  const raw = typeof col.key === 'function' ? col.key(row) : row[col.key];
+  return raw == null ? '' : String(raw);
+}
+
+/** Shared data for CSV + PDF exports */
+export async function getExportPayload(type) {
+  const generatedAt = new Date().toLocaleString();
+
+  if (type === 'inventory') {
+    const [summary, rows] = await Promise.all([
+      getInventoryReport(),
+      prisma.fireExtinguisher.findMany({ orderBy: { serialNumber: 'asc' } }),
+    ]);
+    const columns = [
+      { label: 'Serial Number', key: 'serialNumber', width: 16 },
+      { label: 'Location', key: 'location', width: 22 },
+      { label: 'Type', key: 'type', width: 14 },
+      { label: 'Size', key: 'size', width: 10 },
+      { label: 'Status', key: 'status', width: 18 },
+      { label: 'Expiry', key: (r) => r.expiryDate.toISOString().split('T')[0], width: 12 },
+    ];
+    return {
+      title: 'Inventory Report',
+      filenameBase: 'inventory-report',
+      summaryLines: [
+        `Generated: ${generatedAt}`,
+        `Total extinguishers: ${summary.total}`,
+        `Added today: ${summary.dailySummary} | This month: ${summary.monthlySummary} | This year: ${summary.yearlySummary}`,
+      ],
+      columns,
+      rows,
+    };
+  }
+
+  if (type === 'inspections') {
+    const data = await getInspectionReport();
+    const columns = [
+      { label: 'Status', key: 'status', width: 12 },
+      { label: 'Date', key: (r) => r.scheduledDate.toISOString().split('T')[0], width: 12 },
+      { label: 'Time', key: 'scheduledTime', width: 8 },
+      { label: 'Serial', key: (r) => r.extinguisher?.serialNumber, width: 14 },
+      { label: 'Location', key: (r) => r.extinguisher?.location, width: 22 },
+      { label: 'Notes', key: 'notes', width: 20 },
+    ];
+    return {
+      title: 'Inspection Report',
+      filenameBase: 'inspection-report',
+      summaryLines: [
+        `Generated: ${generatedAt}`,
+        `Pending: ${data.pending} | Completed: ${data.completed} | Overdue: ${data.overdue}`,
+      ],
+      columns,
+      rows: data.recent,
+    };
+  }
+
+  if (type === 'compliance') {
+    const data = await getComplianceReport();
+    const columns = [
+      { label: 'Serial', key: 'serialNumber', width: 14 },
+      { label: 'Location', key: 'location', width: 22 },
+      { label: 'Expiry', key: (r) => r.expiryDate.toISOString().split('T')[0], width: 12 },
+      { label: 'Status', key: 'status', width: 18 },
+    ];
+    return {
+      title: 'Compliance Report (Expired Units)',
+      filenameBase: 'compliance-report',
+      summaryLines: [
+        `Generated: ${generatedAt}`,
+        `Compliance: ${data.complianceStatus} (${data.complianceRate}%)`,
+        `Expired: ${data.expiredCount} | Needs inspection: ${data.needsInspectionCount} | Active: ${data.activeCount}`,
+      ],
+      columns,
+      rows: data.expired,
+    };
+  }
+
+  if (type === 'maintenance') {
+    const data = await getMaintenanceReport();
+    const columns = [
+      { label: 'Date', key: (r) => r.maintenanceDate.toISOString().split('T')[0], width: 12 },
+      { label: 'Serial', key: (r) => r.extinguisher?.serialNumber, width: 14 },
+      { label: 'Location', key: (r) => r.extinguisher?.location, width: 20 },
+      { label: 'Action', key: 'actionTaken', width: 24 },
+      { label: 'Issues', key: 'issuesIdentified', width: 18 },
+      { label: 'Notes', key: 'notes', width: 18 },
+    ];
+    return {
+      title: 'Maintenance Report',
+      filenameBase: 'maintenance-report',
+      summaryLines: [
+        `Generated: ${generatedAt}`,
+        `Total maintenance records: ${data.totalMaintenanceRecords}`,
+      ],
+      columns,
+      rows: data.recentActivities,
+    };
+  }
+
+  return null;
+}
+
+export function formatTextTable(columns, rows) {
+  if (!rows.length) return '(No records)';
+  const widths = columns.map((c) => c.width || 14);
+  const pad = (text, w) => {
+    const s = String(text ?? '');
+    return s.length > w ? `${s.slice(0, w - 1)}…` : s.padEnd(w);
+  };
+  const header = columns.map((c, i) => pad(c.label, widths[i])).join(' ');
+  const divider = widths.map((w) => '-'.repeat(w)).join(' ');
+  const body = rows.map((row) => columns.map((c, i) => pad(cellValue(row, c), widths[i])).join(' '));
+  return [header, divider, ...body].join('\n');
 }

@@ -16,7 +16,11 @@ param(
     [string] $Branch = "main",
 
     [Parameter(Mandatory = $false)]
-    [string] $RepoName = "restful_ne_starter"
+    [string] $RepoName = "restful_ne_starter",
+
+    # Use when GitHub was created with a README or has an old template you want to replace
+    [Parameter(Mandatory = $false)]
+    [switch] $ReplaceRemote
 )
 
 $ErrorActionPreference = "Stop"
@@ -146,12 +150,72 @@ if (-not $status) {
     Write-Ok "Commit created."
 }
 
+# --- Sync with remote (if it exists) ---
+Write-Step "Checking GitHub for existing commits..."
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+git fetch origin 2>$null
+$ErrorActionPreference = $prevEap
+
+$remoteRef = "origin/$Branch"
+git rev-parse --verify $remoteRef 2>$null | Out-Null
+$hasRemoteBranch = ($LASTEXITCODE -eq 0)
+
+if ($hasRemoteBranch) {
+    $behindCount = [int](git rev-list --count "HEAD..$remoteRef" 2>$null)
+    $aheadCount = [int](git rev-list --count "$remoteRef..HEAD" 2>$null)
+
+    if ($behindCount -gt 0) {
+        Write-Warn "GitHub has $behindCount commit(s) that are not in your local folder."
+        Write-Warn "Common cause: repository was created with a README or an older template on GitHub."
+
+        if ($ReplaceRemote) {
+            Write-Step "Replacing GitHub branch with your local code (-ReplaceRemote)..."
+            git push --force-with-lease -u origin $Branch
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host ""
+                Write-Ok "Successfully replaced remote and pushed to GitHub!"
+                if ($remoteUrl) {
+                    $web = $remoteUrl -replace "\.git$", ""
+                    $web = $web -replace "^git@github\.com:", "https://github.com/"
+                    Write-Ok "Repository: $web"
+                }
+                exit 0
+            }
+            Write-Err "Force push failed. Close GitHub in the browser and try again."
+            exit $LASTEXITCODE
+        }
+
+        Write-Host ""
+        Write-Err "Push would be rejected (fetch first)."
+        Write-Warn "Your local project should replace what is on GitHub. Run:"
+        Write-Warn "  .\scripts\push-to-github.ps1 -ReplaceRemote"
+        Write-Warn "Or with a message:"
+        Write-Warn "  .\scripts\push-to-github.ps1 -ReplaceRemote -Message `"TZW fire extinguisher system`""
+        Write-Warn "Only use -ReplaceRemote if you do NOT need to keep the current GitHub files."
+        exit 1
+    }
+
+    if ($aheadCount -eq 0 -and -not (git status --porcelain)) {
+        Write-Ok "Already up to date with GitHub."
+        exit 0
+    }
+}
+
 # --- Push ---
 Write-Step "Pushing to GitHub (origin $Branch)..."
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 git push -u origin $Branch
-if ($LASTEXITCODE -ne 0) {
+$pushFailed = ($LASTEXITCODE -ne 0)
+$ErrorActionPreference = $prevEap
+
+if ($pushFailed) {
     Write-Host ""
-    Write-Err "Push failed. Common fixes:"
+    Write-Err "Push failed."
+    Write-Warn "If you saw 'fetch first' or 'rejected', run:"
+    Write-Warn "  .\scripts\push-to-github.ps1 -ReplaceRemote"
+    Write-Warn "Other fixes:"
     Write-Warn "  1. Create the repo on GitHub: https://github.com/new?name=$RepoName"
     Write-Warn "  2. Sign in: git credential manager  OR use a Personal Access Token as password"
     Write-Warn "  3. Wrong remote?  git remote set-url origin https://github.com/USER/$RepoName.git"

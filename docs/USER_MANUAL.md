@@ -124,7 +124,7 @@ Go to **Reports** for:
 - **Compliance** — expired units, upcoming expirations
 - **Maintenance** — history and frequency
 
-**Export:** Click **CSV** or **PDF** (ADMIN / INSPECTOR).
+**Export:** **Download CSV (Excel)** opens in Excel/Sheets. **Download PDF** is a formatted table (not raw JSON). ADMIN / INSPECTOR only.
 
 ---
 

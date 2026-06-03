@@ -153,7 +153,7 @@ npm run dev
 
 Open:
 - App: http://localhost:5173
-- Swagger: http://localhost:5000/api-docs
+- Swagger: http://localhost:5000/api-docs (see [SWAGGER_TESTING.md](./SWAGGER_TESTING.md))
 
 ---
 

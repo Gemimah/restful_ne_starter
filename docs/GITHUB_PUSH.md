@@ -31,10 +31,26 @@ The script will:
 - Ask for a **commit message**
 - Push to the `main` branch
 
+### Push rejected (`fetch first`)?
+
+This happens when GitHub already has commits (e.g. you created the repo **with a README** or an old template).
+
+Your local folder has the real project. **Replace** what is on GitHub with your local code:
+
+```powershell
+.\scripts\push-to-github.ps1 -ReplaceRemote
+```
+
+Only use `-ReplaceRemote` if you do not need to keep the files currently on GitHub.
+
 ### With options
 
 ```powershell
 .\scripts\push-to-github.ps1 -Username "YourGitHubUsername" -Message "TZW exam: fire extinguisher system"
+```
+
+```powershell
+.\scripts\push-to-github.ps1 -ReplaceRemote -Message "TZW fire extinguisher management system"
 ```
 
 ```powershell
