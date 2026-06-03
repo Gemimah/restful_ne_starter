@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "install:all": "npm install && npm install --prefix services/auth-service && npm install --prefix services/resource-service && npm install --prefix services/reporting-service && npm install --prefix services/api-gateway && npm install --prefix client && npm run prisma:generate",
-    "prisma:generate": "npm --prefix services/auth-service run prisma:generate && npm --prefix services/resource-service run prisma:generate && npm --prefix services/reporting-service run prisma:generate",
-    "prisma:push": "npm exec prisma db push --schema=prisma/schema.prisma",
+    "prisma:generate": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/prisma-generate.ps1",
+    "prisma:generate:only": "npx prisma generate --schema=prisma/schema.prisma",
+    "prisma:push": "npm exec prisma db push --schema=prisma/schema.prisma && npm run prisma:generate",
     "db:seed": "node prisma/seed.js",
     "setup": "npm run install:all && npm run prisma:push && npm run db:seed",
     "db:backup": "node scripts/backup-database.js",
