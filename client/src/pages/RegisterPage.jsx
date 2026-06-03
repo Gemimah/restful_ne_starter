@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../services/auth.service.js';
 import { validateRegisterForm } from '../utils/validation.js';
+import AuthShell, { AuthFooterLink } from '../components/auth/AuthShell.jsx';
+import { authButton, authInput, authInputError, authLabel } from '../components/auth/authStyles.js';
 
 const initialForm = {
   firstName: '',
@@ -17,12 +19,8 @@ function FieldError({ message }) {
   return <p className="mt-1 text-sm text-red-600">{message}</p>;
 }
 
-function inputClass(hasError) {
-  const base =
-    'w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1';
-  return hasError
-    ? `${base} border-red-500 focus:border-red-500 focus:ring-red-500`
-    : `${base} border-slate-300 focus:border-red-500 focus:ring-red-500`;
+function fieldClass(hasError) {
+  return hasError ? authInputError : authInput;
 }
 
 export default function RegisterPage() {
@@ -37,9 +35,7 @@ export default function RegisterPage() {
       setErrors((prev) => {
         const next = { ...prev };
         delete next[field];
-        if (field === 'password' && next.confirmPassword) {
-          delete next.confirmPassword;
-        }
+        if (field === 'password' && next.confirmPassword) delete next.confirmPassword;
         return next;
       });
     }
@@ -66,96 +62,89 @@ export default function RegisterPage() {
       toast.success('Check your email for OTP');
       navigate('/verify-otp', { state: { email: payload.email } });
     } catch {
-      // handled by interceptor
+      // handled
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="rounded-2xl bg-white p-8 shadow-lg">
-      <h2 className="mb-2 text-2xl font-bold text-slate-900">TZW LTD</h2>
-      <p className="mb-6 text-sm text-slate-500">Fire Extinguisher Management — Create account</p>
+    <AuthShell
+      title="Create your account"
+      subtitle="Register to access the TZW fire safety platform. You will verify your email with a one-time code."
+      footer={<AuthFooterLink text="Already have an account?" linkText="Sign in" to="/login" />}
+    >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">First Name</label>
+            <label className={authLabel}>First name</label>
             <input
               type="text"
               autoComplete="given-name"
               maxLength={50}
-              className={inputClass(errors.firstName)}
+              placeholder="Jane"
+              className={fieldClass(errors.firstName)}
               value={form.firstName}
               onChange={(e) => updateField('firstName', e.target.value)}
-              aria-invalid={Boolean(errors.firstName)}
             />
             <FieldError message={errors.firstName} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Last Name</label>
+            <label className={authLabel}>Last name</label>
             <input
               type="text"
               autoComplete="family-name"
               maxLength={50}
-              className={inputClass(errors.lastName)}
+              placeholder="Doe"
+              className={fieldClass(errors.lastName)}
               value={form.lastName}
               onChange={(e) => updateField('lastName', e.target.value)}
-              aria-invalid={Boolean(errors.lastName)}
             />
             <FieldError message={errors.lastName} />
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+          <label className={authLabel}>Email</label>
           <input
             type="email"
             autoComplete="email"
-            className={inputClass(errors.email)}
+            placeholder="you@company.com"
+            className={fieldClass(errors.email)}
             value={form.email}
             onChange={(e) => updateField('email', e.target.value)}
-            aria-invalid={Boolean(errors.email)}
           />
           <FieldError message={errors.email} />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Password</label>
+          <label className={authLabel}>Password</label>
           <input
             type="password"
             autoComplete="new-password"
             maxLength={128}
-            className={inputClass(errors.password)}
+            placeholder="At least 6 characters"
+            className={fieldClass(errors.password)}
             value={form.password}
             onChange={(e) => updateField('password', e.target.value)}
-            aria-invalid={Boolean(errors.password)}
           />
           <FieldError message={errors.password} />
-          <p className="mt-1 text-xs text-slate-500">At least 6 characters</p>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Confirm Password</label>
+          <label className={authLabel}>Confirm password</label>
           <input
             type="password"
             autoComplete="new-password"
             maxLength={128}
-            className={inputClass(errors.confirmPassword)}
+            placeholder="Repeat password"
+            className={fieldClass(errors.confirmPassword)}
             value={form.confirmPassword}
             onChange={(e) => updateField('confirmPassword', e.target.value)}
-            aria-invalid={Boolean(errors.confirmPassword)}
           />
           <FieldError message={errors.confirmPassword} />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-red-600 py-2.5 font-medium text-white hover:bg-red-700 disabled:opacity-50"
-        >
-          {loading ? 'Creating...' : 'Register'}
+        <button type="submit" disabled={loading} className={authButton}>
+          {loading ? 'Creating account...' : 'Create account'}
         </button>
       </form>
-      <p className="mt-4 text-center text-sm text-slate-600">
-        Already have an account?{' '}
-        <Link to="/login" className="font-medium text-red-600 hover:text-red-700">Sign in</Link>
-      </p>
-    </div>
+    </AuthShell>
   );
 }

@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { authService } from '../services/auth.service.js';
+import AuthShell, { AuthFooterLink } from '../components/auth/AuthShell.jsx';
+import { authButton, authInput, authLabel } from '../components/auth/authStyles.js';
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [form, setForm] = useState({ email: location.state?.email || '', otp: '', newPassword: '' });
+  const [form, setForm] = useState({
+    email: location.state?.email || '',
+    otp: '',
+    newPassword: '',
+  });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -14,7 +20,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
     try {
       await authService.resetPassword(form);
-      toast.success('Password reset — please login');
+      toast.success('Password reset — please sign in');
       navigate('/login');
     } finally {
       setLoading(false);
@@ -22,15 +28,51 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="rounded-2xl bg-white p-8 shadow-lg">
-      <h2 className="mb-6 text-2xl font-bold">Reset Password</h2>
+    <AuthShell
+      title="Choose a new password"
+      subtitle="Enter the code from your email and your new password."
+      footer={<AuthFooterLink text="Back to" linkText="Sign in" to="/login" />}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <input type="email" required placeholder="Email" className="w-full rounded-lg border px-3 py-2" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <input required maxLength={6} placeholder="OTP" className="w-full rounded-lg border px-3 py-2" value={form.otp} onChange={(e) => setForm({ ...form, otp: e.target.value })} />
-        <input type="password" required minLength={6} placeholder="New Password" className="w-full rounded-lg border px-3 py-2" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
-        <button type="submit" disabled={loading} className="w-full rounded-lg bg-red-600 py-2.5 text-white">{loading ? 'Resetting...' : 'Reset Password'}</button>
+        <div>
+          <label className={authLabel}>Email</label>
+          <input
+            type="email"
+            required
+            placeholder="you@company.com"
+            className={authInput}
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className={authLabel}>Reset code</label>
+          <input
+            required
+            maxLength={6}
+            inputMode="numeric"
+            placeholder="000000"
+            className={`${authInput} text-center tracking-[0.3em]`}
+            value={form.otp}
+            onChange={(e) => setForm({ ...form, otp: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+          />
+        </div>
+        <div>
+          <label className={authLabel}>New password</label>
+          <input
+            type="password"
+            required
+            minLength={6}
+            placeholder="At least 6 characters"
+            className={authInput}
+            value={form.newPassword}
+            onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+          />
+        </div>
+        <button type="submit" disabled={loading} className={authButton}>
+          {loading ? 'Updating...' : 'Update password'}
+        </button>
       </form>
-      <p className="mt-4 text-center text-sm"><Link to="/login" className="text-red-600">Back to login</Link></p>
-    </div>
+    </AuthShell>
   );
 }

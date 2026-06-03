@@ -31,6 +31,30 @@ export function validateConfirmPassword(password, confirmPassword) {
   return '';
 }
 
+/** Expiry must be strictly after installation (same day is invalid). */
+export function validateExtinguisherDates(installationDate, expiryDate) {
+  if (!installationDate) return { installationDate: 'Installation date is required' };
+  if (!expiryDate) return { expiryDate: 'Expiry date is required' };
+
+  const install = new Date(installationDate);
+  const expiry = new Date(expiryDate);
+  if (Number.isNaN(install.getTime())) {
+    return { installationDate: 'Enter a valid installation date' };
+  }
+  if (Number.isNaN(expiry.getTime())) {
+    return { expiryDate: 'Enter a valid expiry date' };
+  }
+
+  install.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+  if (expiry <= install) {
+    return {
+      expiryDate: 'Expiry date must be after installation date (when the unit was put in service)',
+    };
+  }
+  return {};
+}
+
 export function validateRegisterForm(form) {
   const errors = {};
   const firstName = validateName(form.firstName, 'First name');

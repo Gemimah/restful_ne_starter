@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext.jsx';
 import { extinguisherService } from '../services/extinguisher.service.js';
+import { validateExtinguisherDates } from '../utils/validation.js';
 
 const TYPES = ['WATER', 'CO2', 'FOAM', 'DRY_CHEMICAL'];
 const SIZES = ['LB_1_5', 'LB_5', 'LB_9', 'LB_12'];
@@ -34,6 +35,37 @@ function formFromItem(item) {
   };
 }
 
+function minExpiryDate(installationDate) {
+  if (!installationDate) return undefined;
+  const d = new Date(installationDate);
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+function DateField({ id, label, hint, value, onChange, min, error }) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1 block text-xs font-medium text-slate-700">
+        {label}
+      </label>
+      {hint && <p className="mb-1 text-xs text-slate-500">{hint}</p>}
+      <input
+        id={id}
+        type="date"
+        required
+        min={min}
+        value={value}
+        onChange={onChange}
+        aria-invalid={Boolean(error)}
+        className={`w-full rounded-lg border px-3 py-2 text-sm ${
+          error ? 'border-red-500 focus:border-red-500' : 'border-slate-300'
+        }`}
+      />
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 export default function ExtinguishersPage() {
   const { user } = useAuth();
   const canManage = ['ADMIN', 'INSPECTOR'].includes(user?.role);
@@ -46,6 +78,8 @@ export default function ExtinguishersPage() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [editErrors, setEditErrors] = useState({});
 
   const load = async () => {
     try {
@@ -60,6 +94,13 @@ export default function ExtinguishersPage() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
+    const dateErrors = validateExtinguisherDates(form.installationDate, form.expiryDate);
+    if (Object.keys(dateErrors).length > 0) {
+      setFormErrors(dateErrors);
+      toast.error('Please fix the date fields');
+      return;
+    }
+    setFormErrors({});
     setSubmitting(true);
     try {
       await extinguisherService.create(form);
@@ -79,6 +120,13 @@ export default function ExtinguishersPage() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    const dateErrors = validateExtinguisherDates(editForm.installationDate, editForm.expiryDate);
+    if (Object.keys(dateErrors).length > 0) {
+      setEditErrors(dateErrors);
+      toast.error('Please fix the date fields');
+      return;
+    }
+    setEditErrors({});
     setSubmitting(true);
     try {
       await extinguisherService.update(editingId, editForm);
@@ -115,23 +163,110 @@ export default function ExtinguishersPage() {
       <p className="text-sm text-slate-500">Register and manage fire safety equipment</p>
 
       {canManage && !editingId && (
-        <form onSubmit={handleCreate} className="mt-6 grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-4">
-          <input placeholder="Serial Number" required className="rounded-lg border px-3 py-2 text-sm" value={form.serialNumber} onChange={(e) => setForm({ ...form, serialNumber: e.target.value })} />
-          <input placeholder="Location" required className="rounded-lg border px-3 py-2 text-sm" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-          <select className="rounded-lg border px-3 py-2 text-sm" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-            {TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
-          </select>
-          <select className="rounded-lg border px-3 py-2 text-sm" value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })}>
-            {SIZES.map((s) => <option key={s} value={s}>{s.replace('LB_', '').replace('_', '.')} lb</option>)}
-          </select>
-          <input type="date" required title="Installation Date" className="rounded-lg border px-3 py-2 text-sm" value={form.installationDate} onChange={(e) => setForm({ ...form, installationDate: e.target.value })} />
-          <input type="date" required title="Expiry Date" className="rounded-lg border px-3 py-2 text-sm" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
-          <select className="rounded-lg border px-3 py-2 text-sm" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-            {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
-          </select>
-          <button type="submit" disabled={submitting} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
-            Register Extinguisher
-          </button>
+        <form onSubmit={handleCreate} className="mt-6 rounded-xl border bg-white p-4">
+          <p className="mb-3 text-sm font-medium text-slate-800">Register new extinguisher</p>
+          <div className="grid gap-3 md:grid-cols-4">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Serial number</label>
+              <input
+                placeholder="e.g. FE-TZW-001"
+                required
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={form.serialNumber}
+                onChange={(e) => setForm({ ...form, serialNumber: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Location</label>
+              <input
+                placeholder="e.g. Building A - Floor 1"
+                required
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Type</label>
+              <select
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={form.type}
+                onChange={(e) => setForm({ ...form, type: e.target.value })}
+              >
+                {TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Size</label>
+              <select
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={form.size}
+                onChange={(e) => setForm({ ...form, size: e.target.value })}
+              >
+                {SIZES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace('LB_', '').replace('_', '.')} lb
+                  </option>
+                ))}
+              </select>
+            </div>
+            <DateField
+              id="create-installation-date"
+              label="Installation date"
+              hint="When the unit was put in service at this location"
+              value={form.installationDate}
+              error={formErrors.installationDate}
+              onChange={(e) => {
+                const installationDate = e.target.value;
+                setForm({ ...form, installationDate });
+                if (formErrors.installationDate || formErrors.expiryDate) {
+                  setFormErrors(validateExtinguisherDates(installationDate, form.expiryDate));
+                }
+              }}
+            />
+            <DateField
+              id="create-expiry-date"
+              label="Expiry date"
+              hint="When the unit expires and must be replaced or serviced"
+              value={form.expiryDate}
+              min={minExpiryDate(form.installationDate)}
+              error={formErrors.expiryDate}
+              onChange={(e) => {
+                const expiryDate = e.target.value;
+                setForm({ ...form, expiryDate });
+                if (formErrors.expiryDate) {
+                  setFormErrors(validateExtinguisherDates(form.installationDate, expiryDate));
+                }
+              }}
+            />
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Status</label>
+              <select
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace(/_/g, ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                Register Extinguisher
+              </button>
+            </div>
+          </div>
         </form>
       )}
 
@@ -139,19 +274,95 @@ export default function ExtinguishersPage() {
         <form onSubmit={handleUpdate} className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
           <h3 className="mb-3 font-semibold text-amber-900">Edit Extinguisher</h3>
           <div className="grid gap-3 md:grid-cols-4">
-            <input required className="rounded-lg border px-3 py-2 text-sm" value={editForm.serialNumber} onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })} />
-            <input required className="rounded-lg border px-3 py-2 text-sm" value={editForm.location} onChange={(e) => setEditForm({ ...editForm, location: e.target.value })} />
-            <select className="rounded-lg border px-3 py-2 text-sm" value={editForm.type} onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}>
-              {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </select>
-            <select className="rounded-lg border px-3 py-2 text-sm" value={editForm.size} onChange={(e) => setEditForm({ ...editForm, size: e.target.value })}>
-              {SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <input type="date" required className="rounded-lg border px-3 py-2 text-sm" value={editForm.installationDate} onChange={(e) => setEditForm({ ...editForm, installationDate: e.target.value })} />
-            <input type="date" required className="rounded-lg border px-3 py-2 text-sm" value={editForm.expiryDate} onChange={(e) => setEditForm({ ...editForm, expiryDate: e.target.value })} />
-            <select className="rounded-lg border px-3 py-2 text-sm" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
-              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Serial number</label>
+              <input
+                required
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={editForm.serialNumber}
+                onChange={(e) => setEditForm({ ...editForm, serialNumber: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Location</label>
+              <input
+                required
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={editForm.location}
+                onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Type</label>
+              <select
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={editForm.type}
+                onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+              >
+                {TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Size</label>
+              <select
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={editForm.size}
+                onChange={(e) => setEditForm({ ...editForm, size: e.target.value })}
+              >
+                {SIZES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <DateField
+              id="edit-installation-date"
+              label="Installation date"
+              hint="When the unit was put in service"
+              value={editForm.installationDate}
+              error={editErrors.installationDate}
+              onChange={(e) => {
+                const installationDate = e.target.value;
+                setEditForm({ ...editForm, installationDate });
+                if (editErrors.installationDate || editErrors.expiryDate) {
+                  setEditErrors(validateExtinguisherDates(installationDate, editForm.expiryDate));
+                }
+              }}
+            />
+            <DateField
+              id="edit-expiry-date"
+              label="Expiry date"
+              hint="Must be after installation date"
+              value={editForm.expiryDate}
+              min={minExpiryDate(editForm.installationDate)}
+              error={editErrors.expiryDate}
+              onChange={(e) => {
+                const expiryDate = e.target.value;
+                setEditForm({ ...editForm, expiryDate });
+                if (editErrors.expiryDate) {
+                  setEditErrors(validateExtinguisherDates(editForm.installationDate, expiryDate));
+                }
+              }}
+            />
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">Status</label>
+              <select
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={editForm.status}
+                onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+              >
+                {STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="mt-3 flex gap-2">
             <button type="submit" disabled={submitting} className="rounded-lg bg-red-600 px-4 py-2 text-sm text-white">Save Changes</button>

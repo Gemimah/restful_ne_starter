@@ -38,6 +38,16 @@ export async function getById(id) {
   return extinguisher;
 }
 
+function ensureExpiryAfterInstallation(installationDate, expiryDate) {
+  const install = new Date(installationDate);
+  const expiry = new Date(expiryDate);
+  install.setHours(0, 0, 0, 0);
+  expiry.setHours(0, 0, 0, 0);
+  if (expiry <= install) {
+    throw new AppError('Expiry date must be after installation date', 400);
+  }
+}
+
 export async function create(data, userId) {
   const existing = await prisma.fireExtinguisher.findUnique({
     where: { serialNumber: data.serialNumber },
@@ -46,18 +56,22 @@ export async function create(data, userId) {
     throw new AppError('Serial number already registered', 409);
   }
 
+  const installationDate = new Date(data.installationDate);
+  const expiryDate = new Date(data.expiryDate);
+  ensureExpiryAfterInstallation(installationDate, expiryDate);
+
   return prisma.fireExtinguisher.create({
     data: {
       ...data,
-      installationDate: new Date(data.installationDate),
-      expiryDate: new Date(data.expiryDate),
+      installationDate,
+      expiryDate,
       registeredBy: userId,
     },
   });
 }
 
 export async function update(id, data) {
-  await getById(id);
+  const current = await getById(id);
 
   if (data.serialNumber) {
     const existing = await prisma.fireExtinguisher.findFirst({
@@ -69,8 +83,15 @@ export async function update(id, data) {
   }
 
   const payload = { ...data };
-  if (data.installationDate) payload.installationDate = new Date(data.installationDate);
-  if (data.expiryDate) payload.expiryDate = new Date(data.expiryDate);
+  const installationDate = data.installationDate
+    ? new Date(data.installationDate)
+    : current.installationDate;
+  const expiryDate = data.expiryDate ? new Date(data.expiryDate) : current.expiryDate;
+
+  ensureExpiryAfterInstallation(installationDate, expiryDate);
+
+  if (data.installationDate) payload.installationDate = installationDate;
+  if (data.expiryDate) payload.expiryDate = expiryDate;
 
   return prisma.fireExtinguisher.update({ where: { id }, data: payload });
 }
